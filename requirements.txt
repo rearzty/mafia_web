@@ -6,3 +6,5 @@ passlib[bcrypt]==1.7.4
 bcrypt
 pydantic
 python-jose
+aiosmtplib
+email_validator
