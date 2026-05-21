@@ -64,7 +64,6 @@ def send_reset_email(to_email: str, token: str):
     msg.attach(MIMEText(html_content, "html"))
 
     try:
-        # Отправляем через SMTP
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)

@@ -51,11 +51,9 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
     if get_user_by_email(db, user_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Проверяем, не занят ли username
     if get_user_by_username(db, user_data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
 
-    # Создаем пользователя
     hashed = hash_password(user_data.password)
     user = create_user(
         db=db,
@@ -63,7 +61,6 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
         username=user_data.username,
         hashed_password=hashed
     )
-    access_token = create_access_token(data={"sub": user.email})
     return UserResponse(id=user.id, email=user.email, username=user.username)
 
 

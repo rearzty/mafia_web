@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from app.core.security import hash_password
@@ -20,7 +20,7 @@ def create_user(db: Session, email: str, username: str, hashed_password: str) ->
 
 def create_reset_token(db: Session, email: str) -> str | None:
     token = secrets.token_urlsafe(32)
-    expires = datetime.utcnow() + timedelta(hours=1)
+    expires = datetime.now(UTC) + timedelta(hours=1)
     user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if not user:
         return None
@@ -33,8 +33,8 @@ def create_reset_token(db: Session, email: str) -> str | None:
 def get_valid_reset_token_user(db: Session, token: str) -> User | None:
     user = db.query(User).filter(
         User.reset_token == token,
-        User.reset_token_expires > datetime.utcnow()
-    ).first()
+        User.reset_token_expires > datetime.now(UTC)
+    ).scalar()
     return user
 
 
@@ -50,8 +50,8 @@ def reset_password_by_token(db: Session, token: str, new_password: str) -> User 
 
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    return db.query(User).filter(User.email == email).first()
+    return db.query(User).filter(User.email == email).scalar()
 
 
 def get_user_by_username(db: Session, username: str) -> User | None:
-    return db.query(User).filter(User.username == username).first()
+    return db.query(User).filter(User.username == username).scalar()
