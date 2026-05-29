@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - Мафия{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Добро пожаловать в Мафию!</h1>
+    <p>Онлайн-игра с живыми игроками</p>
+    
+    {% if user %}
+        <a href="/lobby" class="btn btn-primary">Игровой зал</a>
+        <a href="/profile" class="btn btn-secondary">Мой профиль</a>
+    {% else %}
+        <div class="buttons">
+            <a href="/login" class="btn btn-primary">Войти</a>
+            <a href="/register" class="btn btn-secondary">Зарегистрироваться</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

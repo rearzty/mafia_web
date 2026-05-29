@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Игровой зал - Мафия{% endblock %}
+
+{% block content %}
+<h1>Игровой зал</h1>
+
+<div class="lobby-actions">
+    <button onclick="createGame()" class="btn btn-success">Создать новую игру</button>
+</div>
+
+{% if current_game %}
+<div class="current-game">
+    <h2>Ваша текущая игра</h2>
+    <p>ID игры: {{ current_game.id[:8] }}...</p>
+    <p>Игроков: {{ current_game.players_count }}</p>
+    <a href="/game/{{ current_game.id }}" class="btn btn-primary">Войти в игру</a>
+    <button onclick="leaveGame('{{ current_game.id }}')" class="btn btn-danger">Выйти из игры</button>
+</div>
+{% endif %}
+
+<div class="available-games">
+    <h2>Доступные игры</h2>
+    {% for game in available_games %}
+    <div class="game-card">
+        <span>Игра #{{ game.id[:8] }}...</span>
+        <span>Игроков: {{ game.players_count }}</span>
+        <span>Статус: {{ game.status }}</span>
+        <button onclick="joinGame('{{ game.id }}')">Присоединиться</button>
+    </div>
+    {% else %}
+    <p>Нет доступных игр. Создайте новую!</p>
+    {% endfor %}
+</div>
+{% endblock %}

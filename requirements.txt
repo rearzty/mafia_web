@@ -8,3 +8,8 @@ pydantic
 python-jose
 aiosmtplib
 email_validator
+psycopg2-binary
+redis
+starlette
+uvicorn
+websockets

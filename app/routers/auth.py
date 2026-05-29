@@ -1,53 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
-from fastapi.responses import HTMLResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field, EmailStr
 
 from app.core.email import send_reset_email
 from app.db.database import get_db
 from app.db.crud import create_user, get_user_by_email, get_user_by_username, get_valid_reset_token_user, \
     reset_password_by_token, create_reset_token
 from app.core.security import hash_password, verify_password, create_access_token
+from app.schemas.user import UserResponse, RegisterRequest, TokenResponse, ResetPasswordRequest, ForgotPasswordRequest
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-
-
-class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
-
-
-class ResetPasswordRequest(BaseModel):
-    reset_token: str
-    new_password: str
-
-
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    username: str = Field(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_]+$")
-    password: str = Field(min_length=3, max_length=50)
-
-
-class UserResponse(BaseModel):
-    id: int
-    email: str
-    username: str
-
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
 
 
 @router.post("/register", response_model=UserResponse)
-def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
-    # Проверяем, не занят ли email
+async def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
     if get_user_by_email(db, user_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -65,7 +32,7 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(
+async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: Session = Depends(get_db)
 ):
@@ -78,7 +45,16 @@ def login(
         )
 
     access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    response = JSONResponse({"access_token": access_token, "token_type": "bearer"})
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=1800
+    )
+    return response
 
 
 @router.post("/reset-password")
@@ -133,3 +109,10 @@ def show_reset_form(token: str, db: Session = Depends(get_db)):
     </body>
     </html>
     """
+
+
+@router.post("/logout")
+async def logout():
+    response = JSONResponse({"message": "Logged out"})
+    response.delete_cookie("access_token")
+    return response

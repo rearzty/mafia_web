@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Игра - Мафия{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="game-header">
+        <h1>Игра #{{ game_id[:8] }}...</h1>
+        <div class="phase-info">
+            <span class="phase-badge" id="phase-badge">{{ phase }}</span>
+            <span class="timer" id="timer">00:00</span>
+        </div>
+    </div>
+
+    <div class="game-content">
+        <div class="players-panel">
+            <h3>Игроки ({{ game.players|length }})</h3>
+            <div class="players-list" id="players-list">
+                {% for pid in game.players %}
+                <div class="player-card">
+                    <span class="player-name">{{ game.players_usernames[pid] }}</span>
+                    <span class="player-status">{{ '💀 Мёртв' if pid in game.dead else '❤️ Жив' }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="chat-container" id="chat-container">
+            <div class="chat-header" onclick="toggleChat()">
+                <h3>Чат</h3>
+                <span class="chat-toggle">▲</span>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-message system">Добро пожаловать в игру!</div>
+            </div>
+            <div class="chat-input-container" id="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Введите сообщение..." maxlength="200"
+                       onkeydown="if(event.key === 'Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()">➤</button>
+            </div>
+        </div>
+
+        <div class="actions-panel">
+            <div class="role-info" id="role-info" style="display: none;">
+                <div class="role-header" onclick="toggleRole()">
+                    <h3>Ваша роль: <span id="role-value"></span></h3>
+                    <span class="role-toggle">▼</span>
+                </div>
+                <div class="role-description" id="role-description">
+                    <p>Описание роли:</p>
+                    <ul>
+                        <li id="role-abilities"></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="actions" id="action-buttons">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+    window.GAME_ID = "{{ game_id }}";
+    window.USER_ID = "{{ user.id }}";
+    window.PHASE = "{{ phase }}";
+</script>
+
+<script src="/static/js/game.js"></script>
+{% endblock %}

@@ -1,7 +1,27 @@
 import asyncio
 from app.game.core import Game, Phase
 from app.game.config import GameConfig
-from app.game.websocket import manager
+from app.game.storage import mafia_games
+from app.game.websocket import manager, get_game_state
+
+
+async def end_game(game_id, winners):
+    game = mafia_games[game_id]
+    game.phase = Phase.END
+    await manager.broadcast(game_id, {
+        "type": "game_over",
+        "winners": [w for w in winners] if winners else [],
+        "message": "Game Over",
+        "duration": GameConfig.RESTARTING_TIME,
+        'phase': Phase.END.value
+    })
+    await asyncio.sleep(GameConfig.RESTARTING_TIME)
+    mafia_games[game_id].clean_game_on_end()
+    for user_id in game.players:
+        await manager.send_to_player(game_id, user_id, {
+            "type": "refresh",
+            **get_game_state(game, user_id)
+        })
 
 
 async def starting_phase(game_id: str, game: Game):
@@ -16,7 +36,7 @@ async def starting_phase(game_id: str, game: Game):
 
         await manager.broadcast(game_id, {
             "type": "phase_change",
-            "phase": Phase.NIGHT.value,
+            "phase": game.phase.value,
             "duration": GameConfig.NIGHT_TIME
         })
 
@@ -34,6 +54,7 @@ async def night_phase(game_id: str, game: Game):
 
         killed_usernames = game.get_killed()
         revived_username = game.get_revived()
+        game.clean_actions()
 
         await manager.broadcast(game_id, {
             "type": "night_results",
@@ -43,11 +64,7 @@ async def night_phase(game_id: str, game: Game):
 
         game_over, winners = await game.check_winner()
         if game_over:
-            await manager.broadcast(game_id, {
-                "type": "game_over",
-                "winners": [w for w in winners] if winners else [],
-                "message": "Game Over"
-            })
+            asyncio.create_task(end_game(game_id, winners))
             return
 
         game.phase = Phase.DAY
@@ -94,11 +111,7 @@ async def voting_phase(game_id: str, game: Game):
 
         game_over, winners = await game.check_winner()
         if game_over:
-            await manager.broadcast(game_id, {
-                "type": "game_over",
-                "winners": [w for w in winners] if winners else [],
-                "message": "Game Over"
-            })
+            asyncio.create_task(end_game(game_id, winners))
             return
 
         game.clean_actions()

@@ -7,14 +7,10 @@ from app.game.config import Phase, Role, GameConfig
 
 
 class Game:
-    roles = [Role.MAFIA, Role.DOCTOR, Role.COMMISSIONER,
-             Role.CIVILIAN, Role.CIVILIAN, Role.CIVILIAN,
-             Role.MAFIA, Role.CIVILIAN, Role.MAFIA, Role.CIVILIAN]
-
     def __init__(self):
         self.phase = Phase.WAITING
         self.players: list[int] = []
-        self.dead: list[int] = []
+        self.dead: set[int] = set()
         self.killed_this_night: list[int] = []
         self.players_roles: dict[int, Role] = {}
         self.players_usernames: dict[int, str] = {}
@@ -33,7 +29,7 @@ class Game:
         playing = len(players)
         if playing < GameConfig.MIN_PLAYERS:
             return False
-        current_roles = self.roles[:playing:]
+        current_roles = GameConfig.ROLES[:playing:]
         random.shuffle(current_roles)
         players_roles = self.players_roles
         for i in range(playing):
@@ -62,6 +58,9 @@ class Game:
         if player_id not in self.killed_this_night:
             self.killed_this_night.append(player_id)
         self.COMMISSIONER_kill_used = True
+
+    def commissioner_check(self, player_id: int) -> str:
+        return self.players_roles[player_id].value
 
     def mafia_kill(self, player_id: int):
         if player_id not in self.mafia_votes:
@@ -94,7 +93,7 @@ class Game:
         for killed_id in self.killed_this_night:
             killed_username = self.players_usernames[killed_id]
             killed.append(killed_username)
-            self.dead.append(killed_id)
+            self.dead.add(killed_id)
         return killed
 
     def clean_actions(self):
@@ -119,14 +118,13 @@ class Game:
         is_unique_winner = list(results.values()).count(max_votes) == 1
         max_votes_username = self.players_usernames.get(max_votes_user_id, '')
         if is_unique_winner and max_votes_username:
-            self.dead.append(max_votes_user_id)
+            self.dead.add(max_votes_user_id)
         return max_votes_username, is_unique_winner
 
     async def check_winner(self) -> tuple[bool, list[str]]:
         mafias_alive = []
         alive = []
         for player_id in self.players:
-            player_username = self.players_usernames[player_id]
             if player_id not in self.dead:
                 alive.append(player_id)
                 if self.players_roles[player_id] == Role.MAFIA:
@@ -138,3 +136,17 @@ class Game:
             alive_players: list[str] = [self.players_usernames[player_id] for player_id in alive]
             return False, alive_players
         return False, []
+
+    def clean_game_on_end(self) -> None:
+        self.phase = Phase.WAITING
+        self.dead: set[int] = set()
+        self.killed_this_night: list[int] = []
+        self.players_roles: dict[int, Role] = {}
+        self.mafias: list[int] = []
+        self.mafia_votes: dict[int, int] = {}
+        self.voting: dict[int, int] = {}
+        self.revived: int | None = None
+        self.COMMISSIONER_kill_used: bool = False
+        self.DOCTOR_self_heal_used: bool = False
+        self.messages_to_be_removed: list[dict] = []
+        self.action_used: dict[int, bool] = {}

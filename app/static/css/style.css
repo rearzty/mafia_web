@@ -1,0 +1,702 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #eee;
+    min-height: 100vh;
+}
+
+/* ============ Навигация ============ */
+nav {
+    background: rgba(22, 33, 62, 0.9);
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #e94560, #ff6b8a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-decoration: none;
+    transition: transform 0.3s;
+}
+
+.logo:hover {
+    transform: scale(1.05);
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.nav-links a, .nav-links span {
+    color: #eee;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.nav-links a:hover {
+    color: #e94560;
+    background: rgba(233, 69, 96, 0.1);
+}
+
+/* ============ Контейнер ============ */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============ Hero секция ============ */
+.hero {
+    text-align: center;
+    padding: 6rem 2rem;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.8), rgba(22, 33, 62, 0.9));
+    border-radius: 30px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.hero h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #e94560, #ff6b8a, #f9ca7f);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: #aaa;
+    margin-bottom: 2rem;
+}
+
+/* ============ Кнопки ============ */
+.btn {
+    display: inline-block;
+    padding: 0.875rem 2rem;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #e94560, #c73e56);
+    color: white;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+.btn-secondary {
+    background: rgba(15, 52, 96, 0.8);
+    color: white;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.btn-secondary:hover {
+    background: rgba(26, 74, 128, 0.9);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ============ Формы авторизации ============ */
+.auth-form {
+    max-width: 450px;
+    margin: 3rem auto;
+    background: rgba(22, 33, 62, 0.8);
+    backdrop-filter: blur(10px);
+    padding: 2.5rem;
+    border-radius: 24px;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.auth-form h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #e94560, #ff6b8a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #ccc;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+    border-radius: 12px;
+    background: rgba(15, 52, 96, 0.5);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #e94560;
+    box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.2);
+    background: rgba(15, 52, 96, 0.8);
+}
+
+.error {
+    color: #e74c3c;
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.auth-form p {
+    text-align: center;
+    margin-top: 1.5rem;
+    color: #aaa;
+}
+
+.auth-form a {
+    color: #e94560;
+    text-decoration: none;
+}
+
+.auth-form a:hover {
+    text-decoration: underline;
+}
+
+/* ============ Профиль ============ */
+.profile {
+    background: rgba(22, 33, 62, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 2rem;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.profile h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #e94560, #ff6b8a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.profile-info {
+    background: rgba(15, 52, 96, 0.5);
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.info-row {
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(233, 69, 96, 0.2);
+    display: flex;
+    gap: 1rem;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row strong {
+    min-width: 140px;
+    color: #e94560;
+}
+
+/* ============ Лобби ============ */
+.lobby-actions {
+    margin-bottom: 2rem;
+}
+
+.current-game {
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.1), rgba(22, 33, 62, 0.9));
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #e94560;
+}
+
+.current-game h2 {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: #e94560;
+}
+
+.current-game p {
+    margin-bottom: 1rem;
+    color: #ccc;
+}
+
+.available-games {
+    background: rgba(22, 33, 62, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 1.5rem;
+}
+
+.available-games h2 {
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.game-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: rgba(15, 52, 96, 0.5);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s;
+}
+
+.game-card:hover {
+    transform: translateX(5px);
+    background: rgba(15, 52, 96, 0.7);
+    border-left: 3px solid #e94560;
+}
+
+.game-card span {
+    color: #ddd;
+}
+
+.game-card button {
+    background: linear-gradient(135deg, #e94560, #c73e56);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.game-card button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 10px rgba(233, 69, 96, 0.4);
+}
+
+/* ============ Игровая страница ============ */
+.game-container {
+    background: rgba(22, 33, 62, 0.8);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    padding: 1.5rem;
+    border: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.phase-info {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.phase-badge {
+    background: linear-gradient(135deg, #e94560, #c73e56);
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.timer {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: monospace;
+    color: #e94560;
+}
+
+.game-content {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 768px) {
+    .game-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.players-panel {
+    background: rgba(15, 52, 96, 0.5);
+    border-radius: 16px;
+    padding: 1rem;
+}
+
+.players-panel h3 {
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.players-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.player-card {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.75rem;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+}
+
+.player-card:hover {
+    transform: translateX(5px);
+    background: rgba(233, 69, 96, 0.2);
+}
+
+.player-name {
+    font-weight: 500;
+}
+
+.player-status .dead, .player-status .dead {
+    color: #e74c3c;
+}
+
+.player-status .alive, .player-status .alive {
+    color: #2ecc71;
+}
+
+.actions-panel {
+    background: rgba(15, 52, 96, 0.5);
+    border-radius: 16px;
+    padding: 1rem;
+}
+
+.role-info {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.role-info .role {
+    color: #e94560;
+    font-weight: 700;
+}
+
+.waiting-message {
+    text-align: center;
+    padding: 2rem;
+}
+
+.targets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.target-btn {
+    background: rgba(233, 69, 96, 0.2);
+    border: 1px solid rgba(233, 69, 96, 0.5);
+    padding: 0.75rem;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.target-btn:hover {
+    background: rgba(233, 69, 96, 0.5);
+    transform: scale(1.02);
+}
+
+/* ============ Уведомления ============ */
+.message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    animation: slideIn 0.3s ease-out;
+    z-index: 1000;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.message.success {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+}
+
+.message.error {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* ============ Адаптивность ============ */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero {
+        padding: 3rem 1rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+
+    .nav-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .game-card {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .info-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .info-row strong {
+        min-width: auto;
+    }
+
+    .game-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+
+.role-header {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(233, 69, 96, 0.1);
+    border-radius: 8px;
+}
+
+.role-header:hover {
+    background: rgba(233, 69, 96, 0.2);
+}
+
+.role-toggle {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+}
+
+.role-description {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.chat-container {
+    background: rgba(15, 52, 96, 0.7);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: rgba(233, 69, 96, 0.2);
+    cursor: pointer;
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.chat-toggle {
+    transition: transform 0.3s;
+}
+
+.chat-messages {
+    height: 200px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.chat-message {
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    word-wrap: break-word;
+}
+
+.chat-message.system {
+    color: #f9ca7f;
+    font-style: italic;
+    text-align: center;
+}
+
+.chat-message.player {
+    background: rgba(233, 69, 96, 0.15);
+    color: #eee;
+}
+
+.chat-message.player strong {
+    color: #e94560;
+}
+
+.chat-input-container {
+    display: flex;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    border-top: 1px solid rgba(233, 69, 96, 0.3);
+}
+
+.chat-input-container input {
+    flex: 1;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    color: white;
+}
+
+.chat-input-container input:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.chat-input-container button {
+    background: linear-gradient(135deg, #e94560, #c73e56);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s;
+}
+
+.chat-input-container button:hover {
+    transform: scale(1.05);
+}
+
+#chat-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

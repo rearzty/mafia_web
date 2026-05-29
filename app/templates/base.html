@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Мафия{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="/" class="logo">Мафия</a>
+            <div class="nav-links">
+                {% if user %}
+                    <span>{{ user.username }}</span>
+                    <a href="/profile">Профиль</a>
+                    <a href="javascript:void(0)" onclick="logout()">Выйти</a>
+                {% else %}
+                    <a href="/login">Вход</a>
+                    <a href="/register">Регистрация</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="/static/js/script.js?v=2"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
