@@ -6,6 +6,9 @@
 <div class="game-container">
     <div class="game-header">
         <h1>Игра #{{ game_id[:8] }}...</h1>
+        <div class="game-controls">
+            <button onclick="leaveGame('{{ game_id }}')" class="btn btn-danger">Выйти из игры</button>
+        </div>
         <div class="phase-info">
             <span class="phase-badge" id="phase-badge">{{ phase }}</span>
             <span class="timer" id="timer">00:00</span>

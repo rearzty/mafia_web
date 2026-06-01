@@ -1,4 +1,5 @@
-from fastapi import Request, HTTPException
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.core.redis_client import redis_client
 
@@ -23,7 +24,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     await redis_client.expire(key, period)
 
                 if count > limit:
-                    raise HTTPException(429, f"Limit: {limit} per {period} sec")
-                break
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": f"Слишком много запросов. Лимит: {limit} за {period} секунд."}
+                    )
 
         return await call_next(request)

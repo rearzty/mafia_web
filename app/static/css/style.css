@@ -700,3 +700,20 @@ nav {
     opacity: 0.5;
     cursor: not-allowed;
 }
+.message-success {
+    color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.message-error {
+    color: #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 15px;
+}

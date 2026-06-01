@@ -1,9 +1,9 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from app.core.dependencies import get_current_user, get_current_user_optional, get_token
+from app.core.dependencies import get_current_user, get_current_user_optional
 from app.core.security import create_access_token
 from app.db.models import User
 from app.game.dependencies import get_player_in_game
@@ -40,6 +40,8 @@ async def profile_page(request: Request, user: User = Depends(get_current_user))
 
 @router.get("/lobby", response_class=HTMLResponse)
 async def lobby_page(request: Request, user: User = Depends(get_current_user)):
+    if user.id in mafia_players:
+        return RedirectResponse(url=f"/game/{mafia_players[user.id]}")
     available_games = []
     for gid, game in mafia_games.items():
         if game.phase == Phase.WAITING:

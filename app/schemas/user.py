@@ -13,7 +13,7 @@ class ResetPasswordRequest(BaseModel):
 class RegisterRequest(BaseModel):
     email: EmailStr
     username: str = Field(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_]+$")
-    password: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=6, max_length=50)
 
 
 class UserResponse(BaseModel):

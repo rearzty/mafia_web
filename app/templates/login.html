@@ -16,7 +16,16 @@
         </div>
         <button type="submit" class="btn btn-primary">Войти</button>
     </form>
+
+    <div class="auth-links">
+        <a href="/auth/forgot-password-page" class="forgot-password">Забыли пароль?</a>
+    </div>
+
     <div id="error" class="error"></div>
     <p>Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
 </div>
+
+<script>
+    initLoginForm();
+</script>
 {% endblock %}

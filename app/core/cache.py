@@ -6,7 +6,7 @@ async def get_or_set(cache_key: str, fetcher, ttl: int = 10):
     cached = await redis_client.get(cache_key)
     if cached is not None:
         return UserResponse.model_validate_json(cached)
-    data = await fetcher()
+    data = fetcher()
     json_data = UserResponse.model_validate(data).model_dump_json()
     await redis_client.setex(cache_key, ttl, json_data)
     return data
