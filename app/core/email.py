@@ -1,12 +1,16 @@
-import smtplib
-import socket
+import logging
+
+import aiosmtplib
 from email.mime.text import MIMEText
+
 from app.core.config import settings
 
-def send_reset_email(to_email: str, token: str) -> bool:
-    reset_link = f"http://localhost:8000/auth/reset-password-form?token={token}"
+logger = logging.getLogger(__name__)
 
-    subject = "Сброс пароля - Mafia Game"
+
+async def send_reset_email(to_email: str, token: str) -> bool:
+    reset_link = f"{settings.APP_URL}/auth/reset-password-form?token={token}"
+
     text_content = f"""
     Сброс пароля
 
@@ -21,15 +25,21 @@ def send_reset_email(to_email: str, token: str) -> bool:
     """
 
     msg = MIMEText(text_content, "plain")
-    msg["Subject"] = subject
+    msg["Subject"] = "Сброс пароля - Mafia Game"
     msg["From"] = settings.FROM_EMAIL
     msg["To"] = to_email
 
     try:
-        with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30) as server:
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.FROM_EMAIL, to_email, msg.as_string())
+        await aiosmtplib.send(
+            msg,
+            hostname=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
+            start_tls=True,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+            timeout=30,
+        )
         return True
-    except (smtplib.SMTPException, socket.error, TimeoutError) as e:
-        
+    except (aiosmtplib.SMTPException, OSError, TimeoutError) as e:
+        logger.error(f"Failed to send reset email to {to_email}: {e}")
         return False

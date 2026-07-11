@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str
     FROM_EMAIL: str
     REDIS_URL: str
+    APP_URL: str = "http://localhost:8000"
 
     class Config:
         env_file = ".env"

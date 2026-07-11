@@ -1,24 +1,27 @@
 from fastapi import Depends, HTTPException, status, Request, WebSocket
 from jose import jwt, JWTError
-from sqlalchemy.orm import Session
-from fastapi.responses import RedirectResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.crud import get_user_by_email
 from app.db.database import get_db
-from app.db.models import User
 from app.core.cache import get_or_set
+from app.schemas.user import UserResponse
 
 
 async def get_token(request: Request) -> str | None:
     token = request.cookies.get("access_token")
     if not token:
         return None
-    return token[7:]
+    if token.startswith("Bearer "):
+        token = token[7:]
+    return token
 
 
-async def get_current_user(token: str = Depends(get_token),
-                           db: Session = Depends(get_db)) -> User | None | RedirectResponse:
+async def get_current_user(
+        token: str = Depends(get_token),
+        db: AsyncSession = Depends(get_db),
+) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -28,8 +31,8 @@ async def get_current_user(token: str = Depends(get_token),
         raise credentials_exception
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub", '')
-        if email is None:
+        email: str = payload.get("sub", "")
+        if not email:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
@@ -37,7 +40,7 @@ async def get_current_user(token: str = Depends(get_token),
     user = await get_or_set(
         f"user:email:{email}",
         lambda: get_user_by_email(db, email),
-        ttl=30
+        ttl=30,
     )
     if user is None:
         raise credentials_exception
@@ -46,8 +49,8 @@ async def get_current_user(token: str = Depends(get_token),
 
 async def get_current_user_ws(
         websocket: WebSocket,
-        db: Session = Depends(get_db)
-) -> User | None:
+        db: AsyncSession = Depends(get_db),
+) -> UserResponse | None:
     token = websocket.cookies.get("access_token")
     if not token:
         await websocket.close(code=4001, reason="No token")
@@ -58,7 +61,7 @@ async def get_current_user_ws(
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str = payload.get("sub", '')
+        email: str = payload.get("sub", "")
         if not email:
             await websocket.close(code=4001, reason="Invalid token")
             return None
@@ -66,8 +69,12 @@ async def get_current_user_ws(
         await websocket.close(code=4001, reason="Invalid token")
         return None
 
-    user = get_user_by_email(db, email)
-    if not user:
+    user = await get_or_set(
+        f"user:email:{email}",
+        lambda: get_user_by_email(db, email),
+        ttl=30,
+    )
+    if user is None:
         await websocket.close(code=4001, reason="User not found")
         return None
 
@@ -76,18 +83,21 @@ async def get_current_user_ws(
 
 async def get_current_user_optional(
         token: str = Depends(get_token),
-        db: Session = Depends(get_db)
-) -> User | None:
+        db: AsyncSession = Depends(get_db),
+) -> UserResponse | None:
     if not token:
         return None
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str | None = payload.get("sub")
-        if email is None:
+        if not email:
             return None
     except JWTError:
         return None
 
-    user = get_user_by_email(db, email)
-    return user
+    return await get_or_set(
+        f"user:email:{email}",
+        lambda: get_user_by_email(db, email),
+        ttl=30,
+    )

@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from app.core.dependencies import get_current_user, get_current_user_optional
 from app.core.security import create_access_token
-from app.db.models import User
+from app.schemas.user import UserResponse
 from app.game.dependencies import get_player_in_game
 from app.game.storage import mafia_games, mafia_players
 from app.game.core import Phase
@@ -15,31 +15,31 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-async def index(request: Request, user: User = Depends(get_current_user_optional)):
+async def index(request: Request, user: UserResponse = Depends(get_current_user_optional)):
     return templates.TemplateResponse(request, "index.html", {"user": user})
 
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, user: User = Depends(get_current_user_optional)):
+async def login_page(request: Request, user: UserResponse = Depends(get_current_user_optional)):
     if user:
         return RedirectResponse(url="/")
     return templates.TemplateResponse(request, "login.html")
 
 
 @router.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request, user: User = Depends(get_current_user_optional)):
+async def register_page(request: Request, user: UserResponse = Depends(get_current_user_optional)):
     if user:
         return RedirectResponse(url="/")
     return templates.TemplateResponse(request, "register.html")
 
 
 @router.get("/profile", response_class=HTMLResponse)
-async def profile_page(request: Request, user: User = Depends(get_current_user)):
+async def profile_page(request: Request, user: UserResponse = Depends(get_current_user)):
     return templates.TemplateResponse(request, "profile.html", {"user": user})
 
 
 @router.get("/lobby", response_class=HTMLResponse)
-async def lobby_page(request: Request, user: User = Depends(get_current_user)):
+async def lobby_page(request: Request, user: UserResponse = Depends(get_current_user)):
     if user.id in mafia_players:
         return RedirectResponse(url=f"/game/{mafia_players[user.id]}")
     available_games = []
@@ -68,7 +68,7 @@ async def lobby_page(request: Request, user: User = Depends(get_current_user)):
 
 
 @router.get("/game/{game_id}", response_class=HTMLResponse)
-async def game_page(request: Request, game_id: str, user: User = Depends(get_player_in_game)):
+async def game_page(request: Request, game_id: str, user: UserResponse = Depends(get_player_in_game)):
     game = mafia_games.get(game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")

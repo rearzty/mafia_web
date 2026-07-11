@@ -14,3 +14,4 @@ websockets==14.1
 email_validator==2.2.0
 aiosmtplib==2.0.2
 python-multipart==0.0.30
+asyncpg~=0.31.0

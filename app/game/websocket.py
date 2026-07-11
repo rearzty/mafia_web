@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import WebSocket
 from typing import Dict
 
 from app.game.config import Action
 from app.game.core import Game, Phase, Role
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
@@ -25,14 +29,25 @@ class ConnectionManager:
         if game_id in self.active_connections:
             ws = self.active_connections[game_id].get(player_id)
             if ws:
-                await ws.send_json(message)
+                try:
+                    await ws.send_json(message)
+                except Exception as e:
+                    logger.warning(f"Failed to send to player {player_id} in game {game_id}: {e}")
+                    self.disconnect(game_id, player_id)
 
     async def broadcast(self, game_id: str, message: dict, exclude: list[int] = None):
         if game_id in self.active_connections:
             exclude = exclude or []
-            for player_id, ws in self.active_connections[game_id].items():
+            dead_players = []
+            for player_id, ws in list(self.active_connections[game_id].items()):
                 if player_id not in exclude:
-                    await ws.send_json(message)
+                    try:
+                        await ws.send_json(message)
+                    except Exception as e:
+                        logger.warning(f"Failed to broadcast to player {player_id} in game {game_id}: {e}")
+                        dead_players.append(player_id)
+            for player_id in dead_players:
+                self.disconnect(game_id, player_id)
 
 
 manager = ConnectionManager()

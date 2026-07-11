@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, JSONResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.email import send_reset_email
 from app.db.database import get_db
@@ -15,15 +15,15 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=UserResponse)
-async def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
-    if get_user_by_email(db, user_data.email):
+async def register(user_data: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    if await get_user_by_email(db, user_data.email):
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    if get_user_by_username(db, user_data.username):
+    if await get_user_by_username(db, user_data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
 
     hashed = hash_password(user_data.password)
-    user = create_user(
+    user = await create_user(
         db=db,
         email=user_data.email,
         username=user_data.username,
@@ -35,9 +35,9 @@ async def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 async def login(
         form_data: OAuth2PasswordRequestForm = Depends(),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
 ):
-    user = get_user_by_email(db, form_data.username)
+    user = await get_user_by_email(db, form_data.username)
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,26 +71,26 @@ async def forgot_password_page(request: Request):
 
 
 @router.post("/forgot-password")
-def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    user = get_user_by_email(db, request.email)
+async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    user = await get_user_by_email(db, request.email)
     if user and user.reset_token:
         return {"message": "Запрос на восстановление уже отправлен"}
-    token = create_reset_token(db, request.email)
+    token = await create_reset_token(db, request.email)
     if token:
-        send_reset_email(request.email, token)
+        await send_reset_email(request.email, token)
     return {"message": "Если email зарегистрирован, вы получите ссылку"}
 
 
 @router.get("/reset-password-form", response_class=HTMLResponse)
-async def show_reset_form(request: Request, token: str, db: Session = Depends(get_db)):
-    if not get_valid_reset_token_user(db, token):
+async def show_reset_form(request: Request, token: str, db: AsyncSession = Depends(get_db)):
+    if not await get_valid_reset_token_user(db, token):
         return HTMLResponse("Ссылка недействительна или истекла")
     return templates.TemplateResponse(request, name="reset_password_form.html", context={"token": token})
 
 
 @router.post("/reset-password")
-def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
-    user = reset_password_by_token(db, request.reset_token, request.new_password)
+async def reset_password(request: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    user = await reset_password_by_token(db, request.reset_token, request.new_password)
     if not user:
         raise HTTPException(400, "Invalid or expired token")
     return {"message": "Password reset successfully"}

@@ -2,7 +2,7 @@ import asyncio
 import random
 from asyncio import Lock
 
-from app.db.models import User
+from app.schemas.user import UserResponse
 from app.game.config import Phase, Role, GameConfig
 
 
@@ -39,11 +39,11 @@ class Game:
         self.phase = Phase.STARTING
         return True
 
-    def player_join(self, player: User):
+    def player_join(self, player: UserResponse):
         self.players.append(player.id)
         self.players_usernames[player.id] = player.username
 
-    def player_leave(self, player: User):
+    def player_leave(self, player: UserResponse):
         if player.id not in self.players:
             return
         self.players.remove(player.id)

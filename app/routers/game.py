@@ -2,7 +2,7 @@ import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 
-from app.db.models import User
+from app.schemas.user import UserResponse
 from app.core.dependencies import get_current_user, get_current_user_ws
 from app.game.config import GameConfig, Phase
 from app.game.dependencies import get_current_player, get_player_in_game, get_game
@@ -18,16 +18,18 @@ router = APIRouter()
 
 
 @router.post("/create", response_model=GameResponse)
-def create_game(_: User = Depends(get_current_player)):
+def create_game(_: UserResponse = Depends(get_current_player)):
     game_id = uuid.uuid4().__str__()
     mafia_games[game_id] = Game()
     return {'game_id': game_id}
 
 
 @router.post("/{game_id}/join", response_model=GameResponse)
-async def join_game(game_id: str = Depends(get_game), current_user: User = Depends(get_current_player)):
-    mafia_games[game_id].player_join(current_user)
-    mafia_players[current_user.id] = game_id
+async def join_game(game_id: str = Depends(get_game), current_user: UserResponse = Depends(get_current_player)):
+    game = mafia_games[game_id]
+    async with game.lock:
+        game.player_join(current_user)
+        mafia_players[current_user.id] = game_id
     await manager.broadcast(game_id, {
         "type": "player_joined",
     })
@@ -35,22 +37,29 @@ async def join_game(game_id: str = Depends(get_game), current_user: User = Depen
 
 
 @router.post("/{game_id}/leave", response_model=GameResponse)
-async def leave_game(game_id: str = Depends(get_game), current_user: User = Depends(get_player_in_game)):
-    mafia_games[game_id].player_leave(current_user)
-    del mafia_players[current_user.id]
+async def leave_game(game_id: str = Depends(get_game), current_user: UserResponse = Depends(get_player_in_game)):
+    game = mafia_games[game_id]
+    async with game.lock:
+        game.player_leave(current_user)
+        mafia_players.pop(current_user.id, None)
+        game_empty = not game.players
+        if game_empty:
+            del mafia_games[game_id]
+
     await manager.broadcast(game_id, {
         "type": "player_left",
     })
-    if not mafia_games[game_id].players:
-        del mafia_games[game_id]
 
     return {'game_id': game_id}
 
 
 @router.post("/{game_id}/start", response_model=GameResponse)
-async def start_game(game_id: str = Depends(get_game), current_user: User = Depends(get_player_in_game)):
-    if mafia_games[game_id].players[0] == current_user.id and mafia_games[game_id].start_game():
-        game = mafia_games[game_id]
+async def start_game(game_id: str = Depends(get_game), current_user: UserResponse = Depends(get_player_in_game)):
+    game = mafia_games[game_id]
+    async with game.lock:
+        can_start = game.players and game.players[0] == current_user.id and game.start_game()
+
+    if can_start:
         asyncio.create_task(starting_phase(game_id, game))
         for player_id in game.players:
             await manager.send_to_player(game_id, player_id, {
@@ -64,7 +73,7 @@ async def start_game(game_id: str = Depends(get_game), current_user: User = Depe
 
 
 @router.get("/{game_id}/status", response_model=GameStatusResponse)
-def game_status(game_id: str, current_user: User = Depends(get_current_user)):
+def game_status(game_id: str, current_user: UserResponse = Depends(get_current_user)):
     game = mafia_games.get(game_id)
     if not game:
         raise HTTPException(404, "Game not found")
@@ -89,7 +98,7 @@ def game_status(game_id: str, current_user: User = Depends(get_current_user)):
 async def websocket_game(
         websocket: WebSocket,
         game_id: str,
-        user: User = Depends(get_current_user_ws)
+        user: UserResponse = Depends(get_current_user_ws)
 ):
     try:
         if not user:
