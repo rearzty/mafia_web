@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Phase(Enum):
+class Phase(str, Enum):
     RESTARTING = "restarting"
     WAITING = "waiting"
     STARTING = "starting"
@@ -11,11 +11,11 @@ class Phase(Enum):
     END = "end"
 
 
-class Role(Enum):
-    MAFIA = 'Мафия'
-    DOCTOR = 'Доктор'
-    CIVILIAN = 'Мирный'
-    COMMISSIONER = 'Комиссар'
+class Role(str, Enum):
+    MAFIA = "Мафия"
+    DOCTOR = "Доктор"
+    CIVILIAN = "Мирный"
+    COMMISSIONER = "Комиссар"
 
 
 class Action(str, Enum):
@@ -28,6 +28,7 @@ class Action(str, Enum):
 
 class GameConfig:
     MIN_PLAYERS: int = 6
+    MAX_PLAYERS: int = 10
     STARTING_TIME: int = 15
     WAIT_TIME: int = 10
     NIGHT_TIME: int = 30

@@ -14,10 +14,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         for rule_path, config in self.limits.items():
-            if path.startswith(rule_path.rstrip('*')):
-                key = f"rate:{client_ip}:{path}"
+            if path.startswith(rule_path):
+                key = f"rate:{client_ip}:{rule_path}"
                 limit = config["limit"]
                 period = config["period"]
+
                 client = redis_client.get_client()
                 if client:
                     count = await client.incr(key)
@@ -27,7 +28,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     if count > limit:
                         return JSONResponse(
                             status_code=429,
-                            content={"detail": f"Слишком много запросов. Лимит: {limit} за {period} секунд."}
+                            content={"detail": "Слишком много запросов"}
                         )
+                break
 
         return await call_next(request)

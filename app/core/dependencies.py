@@ -24,7 +24,7 @@ async def get_current_user(
 ) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Не удалось проверить данные",
         headers={"WWW-Authenticate": "Bearer"},
     )
     if not token:
@@ -63,10 +63,10 @@ async def get_current_user_ws(
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub", "")
         if not email:
-            await websocket.close(code=4001, reason="Invalid token")
+            await websocket.close(code=4001, reason="Некорректный токен")
             return None
     except JWTError:
-        await websocket.close(code=4001, reason="Invalid token")
+        await websocket.close(code=4001, reason="Некорректный токен")
         return None
 
     user = await get_or_set(
@@ -75,7 +75,7 @@ async def get_current_user_ws(
         ttl=30,
     )
     if user is None:
-        await websocket.close(code=4001, reason="User not found")
+        await websocket.close(code=4001, reason="Пользователь не найден")
         return None
 
     return user

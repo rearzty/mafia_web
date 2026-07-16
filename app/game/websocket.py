@@ -32,10 +32,10 @@ class ConnectionManager:
                 try:
                     await ws.send_json(message)
                 except Exception as e:
-                    logger.warning(f"Failed to send to player {player_id} in game {game_id}: {e}")
+                    logger.warning(f"Не удалось отправить сообщение игроку {player_id} в {game_id}: {e}")
                     self.disconnect(game_id, player_id)
 
-    async def broadcast(self, game_id: str, message: dict, exclude: list[int] = None):
+    async def broadcast(self, game_id: str, message: dict, exclude: list[int] | None = None):
         if game_id in self.active_connections:
             exclude = exclude or []
             dead_players = []
@@ -44,7 +44,7 @@ class ConnectionManager:
                     try:
                         await ws.send_json(message)
                     except Exception as e:
-                        logger.warning(f"Failed to broadcast to player {player_id} in game {game_id}: {e}")
+                        logger.warning(f"Не удалось отправить сообщение игроку {player_id} в {game_id}: {e}")
                         dead_players.append(player_id)
             for player_id in dead_players:
                 self.disconnect(game_id, player_id)
@@ -54,69 +54,76 @@ manager = ConnectionManager()
 
 
 async def handle_action(game: Game, player_id: int, action: str, target_id: int, game_id: str, message: str):
-    if action == "chat":
-        if game.phase in [Phase.NIGHT, Phase.VOTING]:
-            return {"success": False, "message": "Chat disabled in this phase"}
-        if message and len(message) <= 200:
-            await manager.broadcast(game_id, {
-                "type": "chat",
-                "username": game.players_usernames[player_id],
-                "message": message
-            })
-            return {"success": True, "message": "Sent"}
-        return {"success": False, "message": "Invalid message"}
-    if game.action_used.get(player_id):
-        return {"success": False, "message": "Вы уже сделали выбор"}
-    game.action_used[player_id] = True
-    if action == Action.MAFIA_KILL.value:
-        if game.phase != Phase.NIGHT:
-            return {"success": False, "message": "Сейчас не ночь"}
-        if game.players_roles.get(player_id) != Role.MAFIA:
-            return {"success": False, "message": "Вы не мафия"}
+    async with game.lock:
+
+        if action == "chat":
+            if game.phase in [Phase.NIGHT, Phase.VOTING]:
+                return {"success": False, "message": "Чат отключен"}
+            if message and len(message) <= 200:
+                await manager.broadcast(game_id, {
+                    "type": "chat",
+                    "username": game.players_usernames[player_id],
+                    "message": message
+                })
+                return {"success": True, "message": "Sent"}
+            return {"success": False, "message": "Некорректное сообщение"}
+        if target_id not in game.players:
+            return {"success": False, "message": "Некорректная цель"}
         if player_id in game.dead:
             return {"success": False, "message": "Вы мертвы"}
+        if target_id in game.dead:
+            return {"success": False, "message": "Цель мертва"}
+        if game.action_used.get(player_id):
+            return {"success": False, "message": "Вы уже сделали выбор"}
+        game.action_used[player_id] = True
+        if action == Action.MAFIA_KILL.value:
+            if game.phase != Phase.NIGHT:
+                return {"success": False, "message": "Сейчас не ночь"}
+            if game.players_roles.get(player_id) != Role.MAFIA:
+                return {"success": False, "message": "Вы не мафия"}
+            if player_id in game.dead:
+                return {"success": False, "message": "Вы мертвы"}
 
-        game.mafia_kill(target_id)
-        return {"success": True, "message": "Голос принят"}
+            game.mafia_kill(target_id)
+            return {"success": True, "message": "Голос принят"}
 
-    elif action == Action.HEAL.value:
-        if game.phase != Phase.NIGHT:
-            return {"success": False, "message": "Сейчас не ночь"}
-        if game.players_roles.get(player_id) != Role.DOCTOR:
-            return {"success": False, "message": "Вы не доктор"}
+        elif action == Action.HEAL.value:
+            if game.phase != Phase.NIGHT:
+                return {"success": False, "message": "Сейчас не ночь"}
+            if game.players_roles.get(player_id) != Role.DOCTOR:
+                return {"success": False, "message": "Вы не доктор"}
+            game.heal_player(target_id, player_id)
+            return {"success": True, "message": "Выбор сделан"}
 
-        game.heal_player(target_id, player_id)
-        return {"success": True, "message": "Выбор сделан"}
+        elif action == Action.COMMISSIONER_KILL.value:
+            if game.phase != Phase.NIGHT:
+                return {"success": False, "message": "Сейчас не ночь"}
+            if game.players_roles.get(player_id) != Role.COMMISSIONER:
+                return {"success": False, "message": "Вы не комиссар"}
+            if game.COMMISSIONER_kill_used:
+                return {"success": False, "message": "Вы уже использовали убийство"}
 
-    elif action == Action.COMMISSIONER_KILL.value:
-        if game.phase != Phase.NIGHT:
-            return {"success": False, "message": "Сейчас не ночь"}
-        if game.players_roles.get(player_id) != Role.COMMISSIONER:
-            return {"success": False, "message": "Вы не комиссар"}
-        if game.COMMISSIONER_kill_used:
-            return {"success": False, "message": "Вы уже использовали убийство"}
+            game.commissioner_kill(target_id)
+            return {"success": True, "message": "Выбор сделан"}
+        elif action == Action.COMMISSIONER_CHECK.value:
+            if game.phase != Phase.NIGHT:
+                return {"success": False, "message": "Сейчас не ночь"}
+            if game.players_roles.get(player_id) != Role.COMMISSIONER:
+                return {"success": False, "message": "Вы не комиссар"}
 
-        game.commissioner_kill(target_id)
-        return {"success": True, "message": "Выбор сделан"}
-    elif action == Action.COMMISSIONER_CHECK.value:
-        if game.phase != Phase.NIGHT:
-            return {"success": False, "message": "Сейчас не ночь"}
-        if game.players_roles.get(player_id) != Role.COMMISSIONER:
-            return {"success": False, "message": "Вы не комиссар"}
+            result = game.commissioner_check(target_id)
+            return {"success": True, "message": f"Выбранный игрок - {result}"}
 
-        result = game.commissioner_check(target_id)
-        return {"success": True, "message": f"Выбранный игрок - {result}"}
+        elif action == Action.VOTE.value:
+            if game.phase != Phase.VOTING:
+                return {"success": False, "message": "Сейчас не стадия голосования"}
+            if player_id in game.dead:
+                return {"success": False, "message": "Мертвые не могут голосовать"}
 
-    elif action == Action.VOTE.value:
-        if game.phase != Phase.VOTING:
-            return {"success": False, "message": "Not voting phase"}
-        if player_id in game.dead:
-            return {"success": False, "message": "Dead players cannot vote"}
+            game.voting[player_id] = target_id
+            return {"success": True, "message": "Голос принят"}
 
-        game.voting[player_id] = target_id
-        return {"success": True, "message": "Vote registered"}
-
-    return {"success": False, "message": "Unknown action"}
+        return {"success": False, "message": "Неизвестное действие"}
 
 
 def get_game_state(game: Game, player_id: int) -> dict:

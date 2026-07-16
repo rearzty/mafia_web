@@ -9,7 +9,7 @@ def get_current_player(current_user: UserResponse = Depends(get_current_user)) -
     if current_user.id in mafia_players:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Already in a game"
+            detail="Уже в игре"
         )
     return current_user
 
@@ -18,7 +18,7 @@ def get_game(game_id: str) -> str:
     if game_id not in mafia_games:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Game not found"
+            detail="Игра не найдена"
         )
     return game_id
 
@@ -27,6 +27,6 @@ def get_player_in_game(game_id: str = Depends(get_game), current_user: UserRespo
     if current_user.id not in mafia_games[game_id].players:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not a game member"
+            detail="Не является игроком"
         )
     return current_user

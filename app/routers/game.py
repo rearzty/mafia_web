@@ -1,10 +1,11 @@
 import asyncio
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 
 from app.schemas.user import UserResponse
 from app.core.dependencies import get_current_user, get_current_user_ws
-from app.game.config import GameConfig, Phase
+from app.game.config import GameConfig
 from app.game.dependencies import get_current_player, get_player_in_game, get_game
 from app.game.core import Game
 from app.game.phase import starting_phase
@@ -17,17 +18,20 @@ from app.schemas.game import GameResponse, GameStatusResponse
 router = APIRouter()
 
 
-@router.post("/create", response_model=GameResponse)
-def create_game(_: UserResponse = Depends(get_current_player)):
+@router.post("/create", response_model=GameResponse, dependencies=[Depends(get_current_player)])
+def create_game():
     game_id = uuid.uuid4().__str__()
     mafia_games[game_id] = Game()
     return {'game_id': game_id}
 
 
 @router.post("/{game_id}/join", response_model=GameResponse)
-async def join_game(game_id: str = Depends(get_game), current_user: UserResponse = Depends(get_current_player)):
+async def join_game(game_id: Annotated[str, Depends(get_game)],
+                    current_user: Annotated[UserResponse, Depends(get_current_player)]):
     game = mafia_games[game_id]
     async with game.lock:
+        if len(game.players) >= GameConfig.MAX_PLAYERS:
+            raise HTTPException(status_code=400, detail="Достигнуто максимальное количество игроков")
         game.player_join(current_user)
         mafia_players[current_user.id] = game_id
     await manager.broadcast(game_id, {
@@ -37,7 +41,8 @@ async def join_game(game_id: str = Depends(get_game), current_user: UserResponse
 
 
 @router.post("/{game_id}/leave", response_model=GameResponse)
-async def leave_game(game_id: str = Depends(get_game), current_user: UserResponse = Depends(get_player_in_game)):
+async def leave_game(game_id: Annotated[str, Depends(get_game)],
+                     current_user: Annotated[UserResponse, Depends(get_player_in_game)]):
     game = mafia_games[game_id]
     async with game.lock:
         game.player_leave(current_user)
@@ -54,7 +59,8 @@ async def leave_game(game_id: str = Depends(get_game), current_user: UserRespons
 
 
 @router.post("/{game_id}/start", response_model=GameResponse)
-async def start_game(game_id: str = Depends(get_game), current_user: UserResponse = Depends(get_player_in_game)):
+async def start_game(game_id: Annotated[str, Depends(get_game)],
+                     current_user: Annotated[UserResponse, Depends(get_player_in_game)]):
     game = mafia_games[game_id]
     async with game.lock:
         can_start = game.players and game.players[0] == current_user.id and game.start_game()
@@ -69,16 +75,16 @@ async def start_game(game_id: str = Depends(get_game), current_user: UserRespons
             })
         return {'game_id': game_id}
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Game can be started only by creator and {GameConfig.MIN_PLAYERS}+ players")
+                        detail=f"Игра может быть запущена только создателем и когда в игре больше {GameConfig.MIN_PLAYERS} игроков")
 
 
 @router.get("/{game_id}/status", response_model=GameStatusResponse)
-def game_status(game_id: str, current_user: UserResponse = Depends(get_current_user)):
+def game_status(game_id: str, current_user: Annotated[UserResponse, Depends(get_current_user)]):
     game = mafia_games.get(game_id)
     if not game:
-        raise HTTPException(404, "Game not found")
+        raise HTTPException(404, "Игра не найдена")
     if current_user.id not in game.players:
-        raise HTTPException(403, "Not in game")
+        raise HTTPException(403, "Не в игре")
 
     return {
         "phase": game.phase.value,
@@ -98,20 +104,20 @@ def game_status(game_id: str, current_user: UserResponse = Depends(get_current_u
 async def websocket_game(
         websocket: WebSocket,
         game_id: str,
-        user: UserResponse = Depends(get_current_user_ws)
+        user: Annotated[UserResponse, Depends(get_current_user_ws)]
 ):
     try:
         if not user:
-            await websocket.close(code=4001, reason="Invalid token")
+            await websocket.close(code=4001, reason="Некорректный токен")
             return
 
         game = mafia_games.get(game_id)
         if not game:
-            await websocket.close(code=4002, reason="Game not found")
+            await websocket.close(code=4002, reason="Игра не найдена")
             return
 
         if user.id not in game.players:
-            await websocket.close(code=4003, reason="You are not in this game")
+            await websocket.close(code=4003, reason="Вы не в этой игре")
             return
 
         await manager.connect(game_id, user.id, websocket)

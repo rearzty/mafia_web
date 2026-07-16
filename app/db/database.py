@@ -8,7 +8,7 @@ engine = create_async_engine(
     pool_size=10,
     max_overflow=20,
 )
-SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, autoflush=False, expire_on_commit=False)
+SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
 
 
