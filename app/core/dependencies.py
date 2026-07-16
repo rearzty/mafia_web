@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, status, Request, WebSocket
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,10 +20,8 @@ async def get_token(request: Request) -> str | None:
     return token
 
 
-async def get_current_user(
-        token: str = Depends(get_token),
-        db: AsyncSession = Depends(get_db),
-) -> UserResponse:
+async def get_current_user(token: Annotated[str, Depends(get_token)],
+                           db: Annotated[AsyncSession, Depends(get_db)]) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Не удалось проверить данные",
@@ -47,10 +47,8 @@ async def get_current_user(
     return user
 
 
-async def get_current_user_ws(
-        websocket: WebSocket,
-        db: AsyncSession = Depends(get_db),
-) -> UserResponse | None:
+async def get_current_user_ws(websocket: WebSocket,
+                              db: Annotated[AsyncSession, Depends(get_db)]) -> UserResponse | None:
     token = websocket.cookies.get("access_token")
     if not token:
         await websocket.close(code=4001, reason="No token")
@@ -81,10 +79,8 @@ async def get_current_user_ws(
     return user
 
 
-async def get_current_user_optional(
-        token: str = Depends(get_token),
-        db: AsyncSession = Depends(get_db),
-) -> UserResponse | None:
+async def get_current_user_optional(token: Annotated[str, Depends(get_token)],
+                                    db: Annotated[AsyncSession, Depends(get_db)]) -> UserResponse | None:
     if not token:
         return None
 

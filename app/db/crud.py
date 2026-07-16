@@ -24,7 +24,6 @@ async def create_reset_token(db: AsyncSession, email: str) -> str | None:
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
     if not user:
-        print('aaa')
         return None
     user.reset_token = token
     user.reset_token_expires = expires
