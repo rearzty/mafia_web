@@ -40,6 +40,7 @@ async def send_reset_email(to_email: str, token: str) -> bool:
             timeout=30,
         )
         return True
+
     except (aiosmtplib.SMTPException, OSError, TimeoutError) as e:
         logger.error(f"Не удалось отправить email пользователю {to_email}: {e}")
         return False

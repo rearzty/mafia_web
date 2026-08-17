@@ -6,13 +6,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.email import send_reset_email
 from app.db.database import get_db
 from app.db.crud import create_user, get_user_by_email, get_user_by_username, get_valid_reset_token_user, \
     reset_password_by_token, create_reset_token
 from app.core.security import hash_password, verify_password, create_access_token
 from app.routers.pages import templates
 from app.schemas.user import UserResponse, RegisterRequest, TokenResponse, ResetPasswordRequest, ForgotPasswordRequest
+from app.core.celery.tasks import send_reset_email_task
 
 router = APIRouter()
 
@@ -77,10 +77,10 @@ async def forgot_password_page(request: Request):
 async def forgot_password(request: ForgotPasswordRequest, db: Annotated[AsyncSession, Depends(get_db)]):
     user = await get_user_by_email(db, request.email)
     if user and user.reset_token and user.reset_token_expires > datetime.now(timezone.utc):
-        return {"message": "Запрос на восстановление уже отправлен"}
+        return {"message": "Если email зарегистрирован, вы получите ссылку"}
     token = await create_reset_token(db, request.email)
     if token:
-        await send_reset_email(request.email, token)
+        send_reset_email_task.delay(request.email, token)
     return {"message": "Если email зарегистрирован, вы получите ссылку"}
 
 
