@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -7,7 +7,7 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     reset_token: str
-    new_password: str
+    new_password: str = Field(min_length=6, max_length=50)
 
 
 class RegisterRequest(BaseModel):
@@ -21,8 +21,7 @@ class UserResponse(BaseModel):
     email: str
     username: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LoginRequest(BaseModel):

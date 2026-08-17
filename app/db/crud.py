@@ -2,7 +2,7 @@ import secrets
 from datetime import datetime, timedelta, UTC
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.core.security import hash_password
+from app.core.security import hash_password, hash_reset_token
 from app.db.models import User
 
 
@@ -19,22 +19,26 @@ async def create_user(db: AsyncSession, email: str, username: str, hashed_passwo
 
 
 async def create_reset_token(db: AsyncSession, email: str) -> str | None:
-    token = secrets.token_urlsafe(32)
+    raw_token = secrets.token_urlsafe(32)
+    hashed_token = hash_reset_token(raw_token)
     expires = datetime.now(UTC) + timedelta(hours=1)
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
+
     if not user:
         return None
-    user.reset_token = token
+
+    user.reset_token = hashed_token
     user.reset_token_expires = expires
     await db.commit()
-    return token
+    return raw_token
 
 
 async def get_valid_reset_token_user(db: AsyncSession, token: str) -> User | None:
+    hashed_token = hash_reset_token(token)
     result = await db.execute(
         select(User).where(
-            User.reset_token == token,
+            User.reset_token == hashed_token,
             User.reset_token_expires > datetime.now(UTC),
         )
     )
