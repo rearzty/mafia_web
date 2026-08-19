@@ -2,6 +2,7 @@ __pycache__
 *.pyc
 .git
 .env
+.env.test
 db.sqlite3
 alembic/versions/__pycache__
 .DS_Store

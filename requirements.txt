@@ -17,3 +17,4 @@ asyncpg~=0.31.0
 pytest-asyncio~=0.25.2
 celery~=5.6.3
 alembic~=1.16.5
+httpx~=0.28.1

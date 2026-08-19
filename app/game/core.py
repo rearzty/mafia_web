@@ -49,9 +49,7 @@ class Game:
         self.players.remove(player.id)
         self.players_usernames.pop(player.id, None)
 
-    def heal_player(self, player_id: int, doctor_id: int):
-        if player_id == doctor_id:
-            self.DOCTOR_self_heal_used = True
+    def heal_player(self, player_id: int):
         self.revived = player_id
 
     def commissioner_kill(self, player_id: int):

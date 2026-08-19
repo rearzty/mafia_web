@@ -92,6 +92,11 @@ async def handle_action(game: Game, player_id: int, action: str, target_id: int,
                 return {"success": False, "message": "Сейчас не ночь"}
             if game.players_roles.get(player_id) != Role.DOCTOR:
                 return {"success": False, "message": "Вы не доктор"}
+            if target_id == player_id:
+                if not game.DOCTOR_self_heal_used:
+                    game.DOCTOR_self_heal_used = True
+                else:
+                    return {"success": False, "message": "Вы не можете дважды себя вылечить"}
             game.heal_player(target_id, player_id)
             return {"success": True, "message": "Выбор сделан"}
 
