@@ -7,34 +7,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.main import app
 from app.db.database import Base, get_db
 from app.game.storage import mafia_games, mafia_players
+from unittest.mock import patch
 
 load_dotenv(".env.test")
 TEST_DATABASE_URL = os.environ["TEST_DATABASE_URL"]
-
-test_engine = create_async_engine(TEST_DATABASE_URL)
-TestSessionLocal = async_sessionmaker(bind=test_engine, expire_on_commit=False)
-
-
-@pytest_asyncio.fixture(scope="session")
-async def db_setup():
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    yield
-
-    async with test_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
-
-@pytest_asyncio.fixture
-async def db_session(db_setup):
-    async with TestSessionLocal() as session:
-        yield session
-
-        for table in reversed(Base.metadata.sorted_tables):
-            await session.execute(table.delete())
-
-        await session.commit()
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -47,9 +23,16 @@ def clear_game_storage():
 
 
 @pytest_asyncio.fixture
-async def client(db_session):
+async def client():
+    engine = create_async_engine(TEST_DATABASE_URL)
+    session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     async def override_get_db():
-        yield db_session
+        async with session_maker() as session:
+            yield session
 
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
@@ -58,6 +41,10 @@ async def client(db_session):
         yield ac
 
     app.dependency_overrides.clear()
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
 @pytest_asyncio.fixture
@@ -71,3 +58,9 @@ async def registered_user(client):
     })
     assert login_resp.status_code == 200
     return client, payload
+
+
+@pytest_asyncio.fixture(autouse=True)
+def mock_celery_tasks():
+    with patch("app.routers.auth.send_reset_email_task.delay"):
+        yield

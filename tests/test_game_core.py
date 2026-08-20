@@ -1,5 +1,5 @@
 from app.game.core import Game
-from app.game.config import Role, Phase
+from app.game.config import Phase
 
 
 def make_players(n: int):
