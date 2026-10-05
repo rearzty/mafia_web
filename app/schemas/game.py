@@ -15,3 +15,6 @@ class GameStatusResponse(BaseModel):
     phase: str
     players: list[PlayerInfo]
     my_role: str | None
+    has_acted: bool
+    mafia_team: list[str]
+    commissioner_kill_used: bool | None

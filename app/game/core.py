@@ -11,6 +11,7 @@ class Game:
         self.phase = Phase.WAITING
         self.players: list[int] = []
         self.dead: set[int] = set()
+        self.left: set[int] = set()
         self.killed_this_night: list[int] = []
         self.players_roles: dict[int, Role] = {}
         self.players_usernames: dict[int, str] = {}
@@ -27,7 +28,7 @@ class Game:
     def start_game(self) -> bool:
         players = self.players
         playing = len(players)
-        if playing < GameConfig.MIN_PLAYERS:
+        if self.phase != Phase.WAITING or playing < GameConfig.MIN_PLAYERS:
             return False
         current_roles = GameConfig.ROLES[:playing:]
         random.shuffle(current_roles)
@@ -46,8 +47,23 @@ class Game:
     def player_leave(self, player: UserResponse):
         if player.id not in self.players:
             return
-        self.players.remove(player.id)
-        self.players_usernames.pop(player.id, None)
+        if self.phase == Phase.WAITING:
+            self.players.remove(player.id)
+            self.players_usernames.pop(player.id, None)
+            return
+        self.dead.add(player.id)
+        self.left.add(player.id)
+
+    def is_in_game(self, player_id: int) -> bool:
+        return player_id in self.players and player_id not in self.left
+
+    def is_empty(self) -> bool:
+        return len(self.players) == len(self.left)
+
+    def get_mafia_team(self, player_id: int) -> list[str]:
+        if player_id not in self.mafias:
+            return []
+        return [self.players_usernames[mafia_id] for mafia_id in self.mafias if mafia_id != player_id]
 
     def heal_player(self, player_id: int):
         self.revived = player_id
@@ -80,7 +96,7 @@ class Game:
                 self.killed_this_night.append(target)
 
     def get_revived(self) -> str | None:
-        if self.revived and self.revived in self.killed_this_night:
+        if self.revived is not None and self.revived in self.killed_this_night:
             revived: str | None = self.players_usernames[self.revived]
             self.killed_this_night.remove(self.revived)
             return revived
@@ -127,16 +143,20 @@ class Game:
                 alive.append(player_id)
                 if self.players_roles[player_id] == Role.MAFIA:
                     mafias_alive.append(player_id)
-        if len(mafias_alive) * 2 >= len(alive):
+        if len(mafias_alive) == 0:
+            alive_players: list[str] = [self.players_usernames[player_id] for player_id in alive]
+            return True, alive_players
+        elif len(mafias_alive) * 2 >= len(alive):
             mafias_players: list[str] = [self.players_usernames[player_id] for player_id in mafias_alive]
             return True, mafias_players
-        elif len(mafias_alive) == 0:
-            alive_players: list[str] = [self.players_usernames[player_id] for player_id in alive]
-            return False, alive_players
         return False, []
 
     def clean_game_on_end(self) -> None:
+        for player_id in self.left:
+            self.players.remove(player_id)
+            self.players_usernames.pop(player_id, None)
         self.phase = Phase.WAITING
+        self.left: set[int] = set()
         self.dead: set[int] = set()
         self.killed_this_night: list[int] = []
         self.players_roles: dict[int, Role] = {}

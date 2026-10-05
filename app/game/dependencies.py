@@ -27,7 +27,7 @@ def get_game(game_id: str) -> str:
 
 def get_player_in_game(game_id: Annotated[str, Depends(get_game)],
                        current_user: Annotated[UserResponse, Depends(get_current_user)]) -> UserResponse:
-    if current_user.id not in mafia_games[game_id].players:
+    if not mafia_games[game_id].is_in_game(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Не является игроком"

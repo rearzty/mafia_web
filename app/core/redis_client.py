@@ -8,6 +8,7 @@ class RedisClient:
     def __init__(self):
         self.redis_client = None
         self._reconnecting = False
+        self._reconnect_task = None
 
     async def init(self):
         await self._try_connect()
@@ -23,12 +24,13 @@ class RedisClient:
     def get_client(self):
         if self.redis_client is None and not self._reconnecting:
             self._reconnecting = True
-            asyncio.create_task(self.reconnect())
+            self._reconnect_task = asyncio.create_task(self.reconnect())
         return self.redis_client
 
     async def reconnect(self):
         await self._try_connect()
         self._reconnecting = False
+        self._reconnect_task = None
 
 
 redis_client = RedisClient()

@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -75,9 +74,6 @@ async def forgot_password_page(request: Request):
 
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest, db: Annotated[AsyncSession, Depends(get_db)]):
-    user = await get_user_by_email(db, request.email)
-    if user and user.reset_token and user.reset_token_expires > datetime.now(timezone.utc):
-        return {"message": "Если email зарегистрирован, вы получите ссылку"}
     token = await create_reset_token(db, request.email)
     if token:
         send_reset_email_task.delay(request.email, token)

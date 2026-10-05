@@ -7,7 +7,7 @@ async function createGame() {
     const res = await fetch('/game/create', {method: 'POST'});
     if (res.ok) {
         const data = await res.json();
-        await joinGame(data.game_id);
+        window.location.href = `/game/${data.game_id}`;
     }
 }
 

@@ -2,15 +2,11 @@ import os
 import pytest_asyncio
 from dotenv import load_dotenv
 from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-
-from app.main import app
-from app.db.database import Base, get_db
-from app.game.storage import mafia_games, mafia_players
 from unittest.mock import patch
 
+from app.game.storage import mafia_games, mafia_players
+
 load_dotenv(".env.test")
-TEST_DATABASE_URL = os.environ["TEST_DATABASE_URL"]
 
 
 @pytest_asyncio.fixture(autouse=True)
@@ -23,8 +19,18 @@ def clear_game_storage():
 
 
 @pytest_asyncio.fixture
-async def client():
-    engine = create_async_engine(TEST_DATABASE_URL)
+def mock_celery_tasks():
+    with patch("app.routers.auth.send_reset_email_task.delay"):
+        yield
+
+
+@pytest_asyncio.fixture
+async def client(mock_celery_tasks):
+    from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from app.main import app
+    from app.db.database import Base, get_db
+
+    engine = create_async_engine(os.environ["TEST_DATABASE_URL"])
     session_maker = async_sessionmaker(bind=engine, expire_on_commit=False)
 
     async with engine.begin() as conn:
@@ -58,9 +64,3 @@ async def registered_user(client):
     })
     assert login_resp.status_code == 200
     return client, payload
-
-
-@pytest_asyncio.fixture(autouse=True)
-def mock_celery_tasks():
-    with patch("app.routers.auth.send_reset_email_task.delay"):
-        yield

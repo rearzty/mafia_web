@@ -5,10 +5,15 @@ let chatEnabled = true;
 
 
 function connectWebSocket() {
-    ws = new WebSocket(`ws://${window.location.host}/game/ws/${gameId}`);
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${protocol}://${window.location.host}/game/ws/${gameId}`);
     ws.onopen = () => console.log('WebSocket connected');
     ws.onmessage = (event) => handleWebSocketMessage(JSON.parse(event.data));
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+        if (event.code >= 4001 && event.code <= 4003) {
+            showMessage(event.reason || 'Соединение закрыто', 'error');
+            return;
+        }
         console.log('WebSocket disconnected, reconnecting...');
         setTimeout(connectWebSocket, 3000);
     };
@@ -19,9 +24,13 @@ function handleWebSocketMessage(data) {
     console.log('WS:', data);
 
     switch (data.type) {
+        case 'phase_change':
+            if (data.duration) startTimer(data.duration);
+            void refreshUI();
+            break;
+
         case 'connected':
         case 'refresh':
-        case 'phase_change':
         case 'player_joined':
         case 'player_left':
             void refreshUI();
@@ -71,11 +80,11 @@ function createUI(state) {
     updatePlayers(state.players);
     updatePhase(state.phase);
     if (state.my_role) {
-        showRole(state.my_role);
+        showRole(state.my_role, state.mafia_team);
     } else {
         document.getElementById('role-info').style.display = 'none';
-        void updateActionButtons();
     }
+    updateActionButtons(state);
 }
 
 function updatePlayers(players) {
@@ -91,30 +100,30 @@ function updatePlayers(players) {
 }
 
 function updatePhase(phase) {
+    const phaseChanged = currentPhase !== phase;
     currentPhase = phase;
     const phaseBadge = document.getElementById('phase-badge');
     if (phaseBadge) phaseBadge.textContent = phase;
-    toggleChatByPhase(phase);
-    void updateActionButtons();
+    toggleChatByPhase(phase, phaseChanged);
 }
 
-function toggleChatByPhase(phase) {
+function toggleChatByPhase(phase, phaseChanged) {
     const chatInput = document.getElementById('chat-input');
 
     if (phase === 'night') {
         chatInput.disabled = true;
         chatInput.placeholder = 'Чат недоступен ночью...';
-        addSystemMessage('🌙 Наступила ночь. Чат отключён');
+        if (phaseChanged) addSystemMessage('🌙 Наступила ночь. Чат отключён');
     } else if (phase === 'voting') {
         chatInput.disabled = true;
         chatInput.placeholder = 'Идёт голосование, чат отключён...';
-        addSystemMessage('🗳️ Голосование! Чат отключён');
+        if (phaseChanged) addSystemMessage('🗳️ Голосование! Чат отключён');
     } else {
         chatInput.disabled = false;
         chatInput.placeholder = 'Введите сообщение...';
-        if (phase === 'day') {
+        if (phaseChanged && phase === 'day') {
             addSystemMessage('☀️ Наступил день. Можно обсуждать!');
-        } else if (phase === 'starting') {
+        } else if (phaseChanged && phase === 'starting') {
             addSystemMessage('🎭 Ознакомьтесь с вашей ролью. Чат активен');
         }
     }
@@ -137,16 +146,14 @@ function startTimer(duration) {
     }, 1000);
 }
 
-async function updateActionButtons() {
+function updateActionButtons(state) {
     const actionsDiv = document.getElementById('action-buttons');
     if (!actionsDiv) return;
 
-    const res = await fetch(`/game/${gameId}/status`);
-    if (!res.ok) return;
-    const state = await res.json();
     const role = state.my_role;
     const hasActed = state.has_acted;
     const currentUserId = Number(window.USER_ID);
+    const me = state.players.find(p => Number(p.id) === currentUserId);
 
     if (currentPhase === 'waiting') {
         if (Number(state.players[0]?.id) === currentUserId) {
@@ -159,6 +166,11 @@ async function updateActionButtons() {
 
     if (currentPhase === 'end') {
         actionsDiv.innerHTML = '<p>Игра завершена. Страница перезагрузится...</p>';
+        return;
+    }
+
+    if (me && me.is_dead) {
+        actionsDiv.innerHTML = '<p>💀 Вы мертвы. Наблюдайте за игрой.</p>';
         return;
     }
 
@@ -178,7 +190,7 @@ async function updateActionButtons() {
         } else if (role === 'Доктор') {
             renderTargetsList(state, 'heal', 'Выберите игрока для лечения');
         } else if (role === 'Комиссар') {
-            renderTargetsList(state, 'commissioner_kill', 'Выберите цель');
+            renderCommissionerTargets(state);
         } else {
             actionsDiv.innerHTML = '<p>Ожидание ночных действий...</p>';
         }
@@ -206,6 +218,30 @@ function renderTargetsList(state, actionType, title) {
 
     document.querySelectorAll('.target-btn').forEach(btn => {
         btn.addEventListener('click', () => sendAction(actionType, parseInt(btn.dataset.id)));
+    });
+}
+
+function renderCommissionerTargets(state) {
+    const currentUserId = Number(window.USER_ID);
+    const alive = state.players.filter(p => !p.is_dead && Number(p.id) !== currentUserId);
+    const container = document.getElementById('action-buttons');
+    if (!container) return;
+
+    container.innerHTML = `
+        <h4>Проверьте или убейте игрока</h4>
+        <div class="targets-list">
+            ${alive.map(p => `
+                <div class="commissioner-target">
+                    <span>${escapeHtml(p.username)}</span>
+                    <button class="target-btn" data-id="${p.id}" data-action="commissioner_check">🔍 Проверить</button>
+                    ${state.commissioner_kill_used ? '' : `<button class="target-btn" data-id="${p.id}" data-action="commissioner_kill">🔫 Убить</button>`}
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    document.querySelectorAll('.target-btn').forEach(btn => {
+        btn.addEventListener('click', () => sendAction(btn.dataset.action, parseInt(btn.dataset.id)));
     });
 }
 
@@ -334,13 +370,19 @@ async function sendChatMessage() {
 }
 
 
-function showRole(role) {
+function showRole(role, mafiaTeam) {
     const roleElement = document.getElementById('role-value');
     const roleContainer = document.getElementById('role-info');
+    const teamElement = document.getElementById('role-team');
     roleElement.textContent = role;
     updateRoleDescription(role);
+    if (mafiaTeam && mafiaTeam.length) {
+        teamElement.textContent = `Ваши союзники: ${mafiaTeam.join(', ')}`;
+        teamElement.style.display = 'list-item';
+    } else {
+        teamElement.style.display = 'none';
+    }
     roleContainer.style.display = 'block';
-    void updateActionButtons();
 }
 
 function toggleRole() {
