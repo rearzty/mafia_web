@@ -17,7 +17,7 @@
 
     <div class="game-content">
         <div class="players-panel">
-            <h3>Игроки ({{ game.players|length }})</h3>
+            <h3>Игроки (<span id="players-count">{{ game.players|length }}</span>)</h3>
             <div class="players-list" id="players-list">
                 {% for pid in game.players %}
                 <div class="player-card">
@@ -53,6 +53,7 @@
                     <ul>
                         <li id="role-abilities"></li>
                         <li id="role-team" style="display: none;"></li>
+                        <li id="role-checks" style="display: none;"></li>
                     </ul>
                 </div>
             </div>

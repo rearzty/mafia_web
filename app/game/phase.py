@@ -64,8 +64,8 @@ async def night_phase(game_id: str, game: Game):
 
         game.end_night()
 
-        killed_usernames = game.get_killed()
         revived_username = game.get_revived()
+        killed_usernames = game.get_killed()
         game.clean_actions()
 
         await manager.broadcast(game_id, {

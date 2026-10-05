@@ -18,6 +18,27 @@ from app.schemas.game import GameResponse, GameStatusResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+disconnect_tasks: set[asyncio.Task] = set()
+
+
+async def remove_player(game_id: str, game: Game, user: UserResponse):
+    async with game.lock:
+        game.player_leave(user)
+        mafia_players.pop(user.id, None)
+        if game.is_empty():
+            del mafia_games[game_id]
+
+    await manager.broadcast(game_id, {
+        "type": "player_left",
+    })
+
+
+async def leave_on_disconnect(game_id: str, game: Game, user: UserResponse):
+    await asyncio.sleep(GameConfig.RECONNECT_TIME)
+    if mafia_games.get(game_id) is not game or manager.is_connected(game_id, user.id):
+        return
+    if game.is_in_game(user.id):
+        await remove_player(game_id, game, user)
 
 
 @router.post("/create", response_model=GameResponse)
@@ -52,17 +73,7 @@ async def join_game(game_id: Annotated[str, Depends(get_game)],
 @router.post("/{game_id}/leave", response_model=GameResponse)
 async def leave_game(game_id: Annotated[str, Depends(get_game)],
                      current_user: Annotated[UserResponse, Depends(get_player_in_game)]):
-    game = mafia_games[game_id]
-    async with game.lock:
-        game.player_leave(current_user)
-        mafia_players.pop(current_user.id, None)
-        if game.is_empty():
-            del mafia_games[game_id]
-
-    await manager.broadcast(game_id, {
-        "type": "player_left",
-    })
-
+    await remove_player(game_id, mafia_games[game_id], current_user)
     return {'game_id': game_id}
 
 
@@ -149,3 +160,7 @@ async def websocket_game(
         logger.warning(f"Ошибка websocket игрока {user.id} в {game_id}: {e}")
     finally:
         manager.disconnect(game_id, user.id, websocket)
+        if not manager.is_connected(game_id, user.id):
+            task = asyncio.create_task(leave_on_disconnect(game_id, game, user))
+            disconnect_tasks.add(task)
+            task.add_done_callback(disconnect_tasks.discard)

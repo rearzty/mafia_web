@@ -2,7 +2,7 @@ import pytest
 
 from app.game.core import Game
 from app.game.config import Role, Phase
-from app.game.websocket import handle_action
+from app.game.websocket import handle_action, get_game_state
 
 
 def make_players(n: int):
@@ -81,6 +81,7 @@ async def test_doctor_heal_saves_mafia_target():
     assert result["success"] is True
     assert revived == game.players_usernames[target_id]
     assert game.get_killed() == []
+    assert target_id not in game.dead
 
 
 @pytest.mark.asyncio
@@ -176,3 +177,17 @@ def test_mafia_team_visible_only_to_mafia():
 
     assert len(game.get_mafia_team(mafia_id)) == 2
     assert game.get_mafia_team(civilian_id) == []
+
+
+@pytest.mark.asyncio
+async def test_commissioner_checks_visible_only_to_commissioner():
+    game, _ = make_started_game()
+    game.phase = Phase.NIGHT
+    commissioner_id = get_player_by_role(game, Role.COMMISSIONER)
+    mafia_id = get_player_by_role(game, Role.MAFIA)
+
+    await handle_action(game, commissioner_id, "commissioner_check", mafia_id, "game", None)
+
+    mafia_name = game.players_usernames[mafia_id]
+    assert get_game_state(game, commissioner_id)["commissioner_checks"] == {mafia_name: Role.MAFIA.value}
+    assert get_game_state(game, mafia_id)["commissioner_checks"] == {}

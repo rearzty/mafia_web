@@ -28,6 +28,9 @@ class ConnectionManager:
             if not connections:
                 del self.active_connections[game_id]
 
+    def is_connected(self, game_id: str, player_id: int) -> bool:
+        return player_id in self.active_connections.get(game_id, {})
+
     async def send_to_player(self, game_id: str, player_id: int, message: dict):
         if game_id in self.active_connections:
             ws = self.active_connections[game_id].get(player_id)
@@ -151,5 +154,7 @@ def get_game_state(game: Game, player_id: int) -> dict:
         "has_acted": game.action_used.get(player_id, False),
         "mafia_team": game.get_mafia_team(player_id),
         "commissioner_kill_used": game.COMMISSIONER_kill_used
-        if game.players_roles.get(player_id) == Role.COMMISSIONER else None
+        if game.players_roles.get(player_id) == Role.COMMISSIONER else None,
+        "commissioner_checks": game.COMMISSIONER_checks
+        if game.players_roles.get(player_id) == Role.COMMISSIONER else {}
     }

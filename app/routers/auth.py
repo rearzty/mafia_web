@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import get_db
 from app.db.crud import create_user, get_user_by_email, get_user_by_username, get_valid_reset_token_user, \
     reset_password_by_token, create_reset_token
+from app.core.config import settings
 from app.core.security import hash_password, verify_password, create_access_token
 from app.routers.pages import templates
 from app.schemas.user import UserResponse, RegisterRequest, TokenResponse, ResetPasswordRequest, ForgotPasswordRequest
@@ -55,7 +56,7 @@ async def login(
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=1800
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     return response
 

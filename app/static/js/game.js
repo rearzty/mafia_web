@@ -61,6 +61,7 @@ function handleWebSocketMessage(data) {
 
         case 'action_result':
             showMessage(data.message, data.success ? 'success' : 'error');
+            if (data.success) void refreshUI();
             break;
 
         default:
@@ -80,7 +81,7 @@ function createUI(state) {
     updatePlayers(state.players);
     updatePhase(state.phase);
     if (state.my_role) {
-        showRole(state.my_role, state.mafia_team);
+        showRole(state.my_role, state.mafia_team, state.commissioner_checks);
     } else {
         document.getElementById('role-info').style.display = 'none';
     }
@@ -90,6 +91,8 @@ function createUI(state) {
 function updatePlayers(players) {
     const container = document.getElementById('players-list');
     if (!container) return;
+    const count = document.getElementById('players-count');
+    if (count) count.textContent = players.length;
 
     container.innerHTML = players.map(p => `
         <div class="player-card" data-id="${p.id}">
@@ -205,7 +208,7 @@ function updateActionButtons(state) {
 
 function renderTargetsList(state, actionType, title) {
     const currentUserId = Number(window.USER_ID);
-    const alive = state.players.filter(p => !p.is_dead && Number(p.id) !== currentUserId);
+    const alive = state.players.filter(p => !p.is_dead && (Number(p.id) !== currentUserId || actionType === 'heal'));
     const container = document.getElementById('action-buttons');
     if (!container) return;
 
@@ -370,7 +373,7 @@ async function sendChatMessage() {
 }
 
 
-function showRole(role, mafiaTeam) {
+function showRole(role, mafiaTeam, commissionerChecks) {
     const roleElement = document.getElementById('role-value');
     const roleContainer = document.getElementById('role-info');
     const teamElement = document.getElementById('role-team');
@@ -381,6 +384,14 @@ function showRole(role, mafiaTeam) {
         teamElement.style.display = 'list-item';
     } else {
         teamElement.style.display = 'none';
+    }
+    const checksElement = document.getElementById('role-checks');
+    const checks = Object.entries(commissionerChecks || {});
+    if (checks.length) {
+        checksElement.textContent = `Проверки: ${checks.map(([name, checkedRole]) => `${name} — ${checkedRole}`).join(', ')}`;
+        checksElement.style.display = 'list-item';
+    } else {
+        checksElement.style.display = 'none';
     }
     roleContainer.style.display = 'block';
 }

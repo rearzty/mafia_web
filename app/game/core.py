@@ -20,6 +20,7 @@ class Game:
         self.voting: dict[int, int] = {}
         self.revived: int | None = None
         self.COMMISSIONER_kill_used: bool = False
+        self.COMMISSIONER_checks: dict[str, str] = {}
         self.DOCTOR_self_heal_used: bool = False
         self.messages_to_be_removed: list[dict] = []
         self.action_used: dict[int, bool] = {}
@@ -74,7 +75,9 @@ class Game:
         self.COMMISSIONER_kill_used = True
 
     def commissioner_check(self, player_id: int) -> str:
-        return self.players_roles[player_id].value
+        role = self.players_roles[player_id].value
+        self.COMMISSIONER_checks[self.players_usernames[player_id]] = role
+        return role
 
     def mafia_kill(self, player_id: int):
         if player_id not in self.mafia_votes:
@@ -165,6 +168,7 @@ class Game:
         self.voting: dict[int, int] = {}
         self.revived: int | None = None
         self.COMMISSIONER_kill_used: bool = False
+        self.COMMISSIONER_checks: dict[str, str] = {}
         self.DOCTOR_self_heal_used: bool = False
         self.messages_to_be_removed: list[dict] = []
         self.action_used: dict[int, bool] = {}

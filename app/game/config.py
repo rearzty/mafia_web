@@ -35,6 +35,7 @@ class GameConfig:
     DAY_TIME: int = 30
     VOTING_TIME: int = 30
     RESTARTING_TIME: int = 10
+    RECONNECT_TIME: int = 20
     ROLES = [Role.MAFIA, Role.DOCTOR, Role.COMMISSIONER,
              Role.CIVILIAN, Role.CIVILIAN, Role.CIVILIAN,
              Role.MAFIA, Role.CIVILIAN, Role.MAFIA, Role.CIVILIAN]

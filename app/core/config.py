@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     SECRET_KEY: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     ALGORITHM: str = "HS256"
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587

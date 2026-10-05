@@ -18,3 +18,4 @@ class GameStatusResponse(BaseModel):
     has_acted: bool
     mafia_team: list[str]
     commissioner_kill_used: bool | None
+    commissioner_checks: dict[str, str]
